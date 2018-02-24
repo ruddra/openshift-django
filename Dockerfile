@@ -7,7 +7,6 @@ RUN pip install -r /config/requirements.pip
 RUN mkdir /src
 WORKDIR /src
 ADD . /src
-RUN ./manage.py makemigrations
 RUN ./manage.py migrate
 RUN ./manage.py collectstatic --no-input
 
