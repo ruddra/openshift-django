@@ -80,7 +80,7 @@ DATABASES = {
         'NAME': 'mydjango',
         'USER': 'rootadmin',
         'PASSWORD': 'rootadmin123',
-        'HOST': 'mysql',
+        'HOST': 'http://mysql-55-centos7-django.192.168.64.2.nip.io/',
         'PORT': '3306',
     }
 }
