@@ -81,7 +81,7 @@ DATABASES = {
         'USER': 'rootadmin',
         'PASSWORD': 'rootadmin123',
         'HOST': 'mysql-55-centos7',
-        'PORT': '5432',
+        'PORT': '3306',
     }
 }
 
