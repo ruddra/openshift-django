@@ -11,6 +11,6 @@ RUN ./manage.py makemigrations
 RUN ./manage.py migrate
 RUN ./manage.py collectstatic --no-input
 
-CMD gunicorn openshift_django.wsgi -b 3013
+CMD ./manage.py runserver 0.0.0.0:3013
 
 EXPOSE 3013
