@@ -8,8 +8,11 @@ parameters:
   value: stage
   name: STAGE_SERVER
 - displayName: Test Server
-  value: test
+  value: new-cicd
   name: TEST_SERVER
+- displayName: Source Repo
+  value: https://github.com/ruddra/openshift-django.git#develop
+  name: GIT_REP
 metadata:
   name: myfirstpipeline
   labels:
@@ -32,34 +35,40 @@ spec:
   strategy:
     type: JenkinsPipeline
     jenkinsPipelineStrategy:
-    jenkinsfile: |-
-          pipeline {
-            agent {
-              label 'python'
-            }
-            stages {
-              stage('Build App') {
-                steps {
-                  git branch: 'develop', url: 'https://github.com/ruddra/openshift-django.git'
+      jenkinsfile: |-
+            pipeline {
+              agent {
+                label 'python'
+              }
+              stages {
+                stage('Build App') {
+                  steps {
+                    git branch: 'develop', url: '${GIT_REP}'
 
-                  sh "./run-build.sh"
-                }
-              }
-              stage('Test') {
-                steps {
-                  sh "./run-tests.sh"
-                }
-              }
-              stage('Code Analysis') {
-                steps {
-                  script {
-                    sh "sonar:sonar -Dsonar.host.url=http://sonarqube:9000 -Dsonar.sources=."
+                    sh "./run-build.sh"
                   }
                 }
-              }
-              stage 'buildInDevelopment' {
-                openshiftBuild(namespace: '${TEST_SERVER}', buildConfig: 'myapp', showBuildLogs: 'true')
-              }
-              
+                stage('Test') {
+                  steps {
+                    sh "./run-tests.sh"
+                  }
+                }
+                stage('Code Analysis') {
+                  steps {
+                    script {
+                      sh "sonar:sonar -Dsonar.host.url=http://sonarqube:9000 -Dsonar.sources=."
+                    }
+                  }
+                }
 
-              
+              stage('Deploy to Test') {
+                openshiftDeploy(deploymentConfig: '${PROJECT_NAME}', namespace='${TEST_SERVER}')
+              }
+              # stage('Deploy to Stage') {
+              #   openshiftTag(namespace: '${TEST_SERVER}', sourceStream: '${PROJECT_NAME}',  sourceTag: 'latest', destinationStream: '${PROJECT_NAME}', destinationTag: 'promoteToQA')
+              #   openshiftDeploy(namespace: '${STAGE_SERVER}', deploymentConfig: '${PROJECT_NAME}', )
+              #   openshiftScale(namespace: '${STAGE_SERVER}', deploymentConfig: '${PROJECT_NAME}', replicaCount: '3')
+              # }
+  output:
+  resources:
+  postCommit:

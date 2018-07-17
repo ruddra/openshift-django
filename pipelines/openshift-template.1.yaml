@@ -25,9 +25,9 @@ objects:
   kind: BuildConfig
 
   metadata:
-    name: django-pipeline
+    name: djangopipeline
     labels:
-      name: django-pipeline
+      name: djangopipeline
     annotations:
       pipeline.alpha.openshift.io/uses: '[{"name": "${PROJECT_NAME}", "namespace": "", "kind": "DeploymentConfig"}]'
   spec:
@@ -46,88 +46,61 @@ objects:
     strategy:
       type: JenkinsPipeline
       jenkinsPipelineStrategy:
-      jenkinsfile: |-
-            pipeline {
-              agent {
-                label 'python'
-              }
-              stages {
-                stage('Build App') {
-                  steps {
-                    git branch: 'develop', url: 'https://github.com/ruddra/openshift-django.git'
+      jenkinsfile: 
 
-                    sh "./run-build.sh"
-                  }
-                }
-                stage('Test') {
-                  steps {
-                    sh "./run-tests.sh"
-                  }
-                }
-                stage('Code Analysis') {
-                  steps {
-                    script {
-                      sh "sonar:sonar -Dsonar.host.url=http://sonarqube:9000 -Dsonar.sources=."
-                    }
-                  }
-                }
-
-              stage('Deploy to Test') {
-                openshiftDeploy(deploymentConfig: '${PROJECT_NAME}', namespace='${TEST_SERVER}')
-              }
-              stage('Deploy to Stage') {
-                openshiftTag(namespace: '${TEST_SERVER}', sourceStream: '${PROJECT_NAME}',  sourceTag: 'latest', destinationStream: '${PROJECT_NAME}', destinationTag: 'promoteToQA')
-                openshiftDeploy(namespace: '${STAGE_SERVER}', deploymentConfig: '${PROJECT_NAME}', )
-                openshiftScale(namespace: '${STAGE_SERVER}', deploymentConfig: '${PROJECT_NAME}', replicaCount: '3')
-              }
-
-- apiVersion: batch/v1
-  kind: Job
-  metadata:
-    name: Django-installer
-  spec:
-    activeDeadlineSeconds: 1000
-    completions: 1
-    parallelism: 1
-    template:
-      spec:
-        containers:
-        - env:
-          - name: CICD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          command:
-          - /bin/bash
-          - -x
-          - -c
-          - |
-            oc project ${TEST_SERVER}
-            oc new-app ${GIT_REP} name=${PROJECT_NAME}
-            oc new-app openshift/mysql-55-centos7 \
-                 -e MYSQL_USER=myroot \
-                 -e MYSQL_PASSWORD=myroot123 \
-                 -e MYSQL_DATABASE=mydjango
-            oc volumes dc/${PROJECT_NAME} --add \
-              --name 'p-vol-1' \
-              --type 'pvc' \
-              --mount-path '/data/' \
-              --claim-name 'pv-django' \
-              --claim-size '1G' \
-              --overwrite
-            oc project ${TEST_SERVER}
-            oc new-app ${GIT_REP} name=${PROJECT_NAME}
-            oc new-app openshift/mysql-55-centos7 \
-                 -e MYSQL_USER=myroot \
-                 -e MYSQL_PASSWORD=myroot123 \
-                 -e MYSQL_DATABASE=mydjango
-            oc volumes dc/${PROJECT_NAME} --add \
-              --name 'p-vol-1' \
-              --type 'pvc' \
-              --mount-path '/data/' \
-              --claim-name 'pv-django' \
-              --claim-size '1G' \
-              --overwrite
+# - apiVersion: batch/v1
+#   kind: Job
+#   metadata:
+#     name: djangoinstaller
+#   spec:
+#     activeDeadlineSeconds: 1000
+#     completions: 1
+#     parallelism: 1
+#     template:
+#       spec:
+#         containers:
+#         - env:
+#           - name: CICD_NAMESPACE
+#             valueFrom:
+#               fieldRef:
+#                 fieldPath: metadata.namespace
+#           command:
+#           - /bin/bash
+#           - -x
+#           - -c
+#           - |
+#             oc project ${TEST_SERVER}
+#             oc new-app ${GIT_REP} name=${PROJECT_NAME}
+#             oc new-app openshift/mysql-55-centos7 \
+#                  -e MYSQL_USER=myroot \
+#                  -e MYSQL_PASSWORD=myroot123 \
+#                  -e MYSQL_DATABASE=mydjango
+#             oc volumes dc/${PROJECT_NAME} --add \
+#               --name 'p-vol-1' \
+#               --type 'pvc' \
+#               --mount-path '/data/' \
+#               --claim-name 'pv-django' \
+#               --claim-size '1G' \
+#               --overwrite
+#             oc project ${TEST_SERVER}
+#             oc new-app ${GIT_REP} name=${PROJECT_NAME}
+#             oc new-app openshift/mysql-55-centos7 \
+#                  -e MYSQL_USER=myroot \
+#                  -e MYSQL_PASSWORD=myroot123 \
+#                  -e MYSQL_DATABASE=mydjango
+#             oc volumes dc/${PROJECT_NAME} --add \
+#               --name 'p-vol-1' \
+#               --type 'pvc' \
+#               --mount-path '/data/' \
+#               --claim-name 'pv-django' \
+#               --claim-size '1G' \
+#               --overwrite
+#           image: openshift/origin:v3.9.0
+#           name: cicd-demo-installer-job
+#           resources: {}
+#           terminationMessagePath: /dev/termination-log
+#           terminationMessagePolicy: File
+#         restartPolicy: Never
 
 
 
