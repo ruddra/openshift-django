@@ -6,9 +6,9 @@ RUN pip install -r /config/requirements.pip
 
 ADD . /src
 WORKDIR /src
-RUN chmod u+x run-build.sh
-RUN chmod u+x run-test.sh
-RUN chmod u+x run-sonarqube.sh
+# RUN chmod u+x run-build.sh
+# RUN chmod u+x run-test.sh
+# RUN chmod u+x run-sonarqube.sh
 RUN ./run-build.sh
 RUN ./run-test.sh
 RUN ./run-sonarqube.sh
