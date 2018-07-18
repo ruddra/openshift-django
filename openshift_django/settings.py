@@ -130,8 +130,3 @@ STATIC_ROOT = '/static'
 
 MEDIA_ROOT = '/data/'
 MEDIA_URL = '/media/'
-
-try:
-    import * from .local_settings
-except ImportError:
-    print("No Local Settings Found")
