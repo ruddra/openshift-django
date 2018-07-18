@@ -4,9 +4,11 @@ ENV PYTHONUNBUFFERED 1
 ADD requirements.pip /config/
 RUN pip install -r /config/requirements.pip
 
-RUN mkdir /src
-WORKDIR /src
 ADD . /src
+WORKDIR /src
+RUN chmod u+x ./run-build.sh
+RUN chmod u+x ./run-test.sh
+RUN chmod u+x ./run-sonarqube.sh
 RUN ./run-build.sh
 RUN ./run-test.sh
 RUN ./run-sonarqube.sh

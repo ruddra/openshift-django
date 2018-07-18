@@ -14,11 +14,11 @@ parameters:
   value: https://github.com/ruddra/openshift-django.git#develop
   name: GIT_REP
 metadata:
-  name: myfirstpipeline
+  name: djangopipeline
   labels:
-    name: myfirstpipeline
+    name: djangopipeline
   annotations:
-    pipeline.alpha.openshift.io/uses: '[{"name": "${PROJECT_NAME}", "namespace": "", "kind": "DeploymentConfig"}]'
+    pipeline.alpha.openshift.io/uses: '[{"name": "openshift-django", "namespace": "", "kind": "DeploymentConfig"}]'
 spec:
   triggers:
     -
@@ -36,15 +36,20 @@ spec:
     type: JenkinsPipeline
     jenkinsPipelineStrategy:
       jenkinsfile: |-
-            stage 'build in ${TEST_SERVER}'
-            openshiftBuild(namespace: '${TEST_SERVER}', buildConfig: '${PROJECT_NAME}', showBuildLogs: 'true')
-            stage 'deploy in ${TEST_SERVER}'
-            openshiftDeploy(namespace: '${TEST_SERVER}', deploymentConfig: '${PROJECT_NAME}')
-            openshiftScale(namespace: '${TEST_SERVER}', deploymentConfig: '${PROJECT_NAME}',replicaCount: '2')
-            stage 'deploy in ${STAGE_SERVER}'
-            openshiftTag(namespace: '${TEST_SERVER}', sourceStream: '${PROJECT_NAME}',  sourceTag: 'latest', destinationStream: '${PROJECT_NAME}', destinationTag: 'promoteToQA')
-            openshiftDeploy(namespace: '${STAGE_SERVER}', deploymentConfig: '${PROJECT_NAME}', )
-            openshiftScale(namespace: '${STAGE_SERVER}', deploymentConfig: '${PROJECT_NAME}',replicaCount: '3')
+          node('') {
+            stage('build in test'){
+                openshiftBuild(namespace: "new-cicd", buildConfig: "openshift-django", showBuildLogs: 'true')
+              }
+            stage('deploy in test'){
+                openshiftDeploy(namespace: 'new-cicd', deploymentConfig: "openshift-django")
+                openshiftScale(namespace: 'new-cicd', deploymentConfig: "openshift-django", replicaCount: '2')
+              }
+            stage('deploy in stage'){
+              openshiftTag(namespace: 'new-cicd', sourceStream: 'openshift-django',  sourceTag: 'latest', destinationStream: 'openshift-django', destinationTag: 'promoteToQA')
+              openshiftDeploy(namespace: 'stage', deploymentConfig: 'openshift-django', )
+              openshiftScale(namespace: 'stage', deploymentConfig: 'openshift-django',replicaCount: '3')
+            }
+          }
   output:
   resources:
   postCommit:
