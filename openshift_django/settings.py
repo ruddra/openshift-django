@@ -81,9 +81,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mydjango',
-        'USER': 'rootadmin',
-        'PASSWORD': 'rootadmin123',
-        'HOST': '172.17.0.4',  # Your openshift host
+        'USER': 'myroot',
+        'PASSWORD': 'myroot123',
+        'HOST': 'mysql-55-centos7',  # Your openshift host
         'PORT': '3306',
     }
 }
@@ -130,8 +130,3 @@ STATIC_ROOT = '/static'
 
 MEDIA_ROOT = '/data/'
 MEDIA_URL = '/media/'
-
-try:
-    import * from .local_settings
-except ImportError:
-    print("No Local Settings Found")

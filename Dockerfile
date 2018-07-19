@@ -4,12 +4,12 @@ ENV PYTHONUNBUFFERED 1
 ADD requirements.pip /config/
 RUN pip install -r /config/requirements.pip
 
-RUN mkdir /src
-WORKDIR /src
 ADD . /src
-RUN ./manage.py makemigrations
-RUN ./manage.py migrate
-RUN ./manage.py collectstatic --no-input
+WORKDIR /src
+
+RUN pip install -r requirements.pip
+RUN python manage.py migrate
+RUN python manage.py test
 
 CMD gunicorn openshift_django.wsgi -b 0.0.0.0:3013
 # CMD python manage.py runserver 0.0.0.0:3013
