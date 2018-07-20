@@ -10,7 +10,6 @@ objects:
     labels:
       app: mysql-55-centos7
     name: mysql-55-centos7
-    resourceVersion: '219015'
     uid: c21278ce-8bf8-11e8-a514-080027f414e3
   spec:
     clusterIP: 172.30.0.30
