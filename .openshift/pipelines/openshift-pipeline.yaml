@@ -49,8 +49,8 @@ spec:
                   script {
                     openshift.withCluster() {
                       openshift.withProject(env.DEV_PROJECT) {
-                        def app = openshift.newApp(openshiftDjangoRepo).narrow("svc").expose();
-                        def dc = openshift.selector("dc", "openshift-django")
+                        openshift.newApp(openshiftDjangoRepo).narrow("svc").expose();
+                        openshift.selector("dc", "openshift-django")
                       }
                     }
                   }

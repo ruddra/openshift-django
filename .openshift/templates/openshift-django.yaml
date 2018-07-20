@@ -89,3 +89,27 @@ objects:
     replicas: 0
     unavailableReplicas: 0
     updatedReplicas: 0
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: openshift-django
+    name: openshift-django
+  spec:
+    ports:
+    - name: 3013-tcp
+      port: 3013
+      protocol: TCP
+      targetPort: 3013
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: openshift-django
+      deploymentconfig: openshift-django
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
