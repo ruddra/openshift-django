@@ -104,7 +104,7 @@ objects:
           kind: ImageStreamTag
           name: 'python:3.6'
           namespace: openshift
-        type: Docker
+      type: Docker
     triggers:
     - imageChangeParams:
         containerNames:
