@@ -46,10 +46,11 @@ objects:
       dockerStrategy:
         from:
           kind: ImageStreamTag
-          name: 'python:3.6'
-        type: Docker
+          name: python:3.6
+          namespace: openshift
+      type: Docker
     postCommit:
-      script: "python manage.py test"
+script: "python manage.py test"
 
 - apiVersion: v1
   kind: ImageStream
