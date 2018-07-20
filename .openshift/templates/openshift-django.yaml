@@ -44,7 +44,7 @@ objects:
       app: openshift-django
     name: openshift-django
   spec:
-    replicas: 1
+    replicas: 0
     revisionHistoryLimit: 10
     selector:
       app: openshift-django
