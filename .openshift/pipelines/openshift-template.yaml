@@ -28,11 +28,35 @@ spec:
         value: new-stage
     jenkinsPipelineStrategy:
       jenkinsfile: |-
-          def gitRepo="https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-build.yaml"
+          def openshiftDjangoRepo="https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-build.yaml"
+          def mysqlRepo="https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/mysql-build.yaml"
           def stageTag="promoteToQA"
           pipeline{
             agent { label ""}
             stages{
+              stage('Start Mysql in DEV'){
+                when {
+                  expression {
+                    openshift.withCluster() {
+                      openshift.withProject(env.DEV_PROJECT) {
+                        echo "checking mysql exists in DEV"
+                        return !openshift.selector("bc", "mysql-55-centos7").exists();
+                      }
+                    }
+                  }
+                }
+                steps {
+                  script {
+                    openshift.withCluster() {
+                      openshift.withProject(env.DEV_PROJECT) {
+                        def app = openshift.newApp(openshiftDjangoRepo)
+                        openshiftBuild(namespace: "${env.DEV_PROJECT}", buildConfig: "mysql-55-centos7")
+                        openshiftDeploy(namespace: "${env.DEV_PROJECT}", buildConfig: "mysql-55-centos7")
+                      }
+                    }
+                  }
+                }
+              }
               stage('Create in DEV') {
                 when {
                   expression {
@@ -60,7 +84,7 @@ spec:
                   }
                 }
               }
-              stage('Build in DEV'){
+              stage('Build and Test in DEV'){
                 steps {
                   script {
                     openshiftBuild(namespace: "${env.DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true')
@@ -71,6 +95,12 @@ spec:
                 steps {
                   script {
                     openshiftDeploy(namespace: "${env.DEV_PROJECT}", deploymentConfig: "openshift-django")
+                  }
+                }
+              }
+              stage('Scale in DEV') {
+                steps {
+                  script {
                     openshiftScale(namespace: "${env.DEV_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '2')
                   }
                 }
@@ -84,6 +114,29 @@ spec:
                   script {
                     openshift.withCluster() {
                       openshift.tag("${env.DEV_PROJECT}/openshift-django:latest", "${env.STAGE_PROJECT}/openshift-django:${stageTag}")
+                    }
+                  }
+                }
+              }
+              stage('Start Mysql in STAGE'){
+                when {
+                  expression {
+                    openshift.withCluster() {
+                      openshift.withProject(env.STAGE) {
+                        echo "checking mysql exists in STAGE"
+                        return !openshift.selector("bc", "mysql-55-centos7").exists();
+                      }
+                    }
+                  }
+                }
+                steps {
+                  script {
+                    openshift.withCluster() {
+                      openshift.withProject(env.STAGE) {
+                        def app = openshift.newApp(mysqlRepo)
+                        openshiftBuild(namespace: "${env.DEV_PROJECT}", buildConfig: "mysql-55-centos7")
+                        openshiftDeploy(namespace: "${env.DEV_PROJECT}", buildConfig: "mysql-55-centos7")
+                      }
                     }
                   }
                 }
@@ -103,15 +156,22 @@ spec:
                   }
                 }
               }
-              stage('Deploy to STAGE') {
+              stage('Rollout to STAGE') {
                 steps {
                   script {
                     openshift.withCluster() {
                       openshift.withProject(env.STAGE_PROJECT) {
                         openshift.newApp("openshift-django:latest").narrow("svc").expose()
-                        openshiftScale(namespace: "${env.STAGE_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '3')
                       }
                     }
+                  }
+                }
+              }
+            }
+            stage('Scale in STAGE') {
+                steps {
+                  script {
+                    openshiftScale(namespace: "${env.STAGE_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '3')
                   }
                 }
               }
