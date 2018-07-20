@@ -21,7 +21,7 @@ objects:
       type: Git
     strategy:
       dockerStrategy:
-        noCache: true
+         dockerfilePath: .
       type: Docker
     postCommit:
       script: "python manage.py test"
