@@ -30,7 +30,7 @@ echo "installing mysql which will be available at IP: 172.30.0.30"
 oc new-app -f "https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/templates/mysql-build.yaml"
 
 echo "loading pipeline into cicd project"
-oc new-app -f "https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/pipelines/openshift-pipeline.yaml"
+oc new-app -f "https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/pipelines/openshift-django-pipeline.yaml"
 
 echo "now go to console>cicd>builds>pipelines and click on start pipeline"
 
