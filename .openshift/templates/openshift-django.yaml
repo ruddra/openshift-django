@@ -4,6 +4,25 @@ metadata:
   creationTimestamp: null
   name: openshift-django
 objects:
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: openshift-django
+    name: python
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+      - annotations:
+          openshift.io/imported-from: 'python:3.6'
+        from:
+          kind: DockerImage
+          name: 'python:3.6'
+        name: '3.6'
+        referencePolicy:
+          type: Source
+          
 - apiVersion: v1
   kind: BuildConfig
   metadata:
@@ -21,7 +40,6 @@ objects:
       type: Git
     postCommit:
       script: "python manage.py test"
-
 
 - apiVersion: v1
   kind: ImageStream
