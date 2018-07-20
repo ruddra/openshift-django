@@ -38,6 +38,7 @@ spec:
                   expression {
                     openshift.withCluster() {
                       openshift.withProject(env.DEV_PROJECT) {
+                        echo "checking openshift django exists in DEV"
                         return !openshift.selector("bc", "openshift-django").exists();
                       }
                     }
