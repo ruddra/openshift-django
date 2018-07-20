@@ -66,6 +66,13 @@ objects:
         securityContext: {}
         terminationGracePeriodSeconds: 30
     test: false
+    strategy:
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'python:3.6'
+          namespace: openshift
+        type: Docker
     triggers:
     - imageChangeParams:
         containerNames:
