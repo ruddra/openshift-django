@@ -43,11 +43,12 @@ objects:
         uri: https://github.com/ruddra/openshift-django.git
       type: Git
     strategy:
-    dockerStrategy:
-      from:
-        kind: ImageStreamTag
-        name: 'python:3.6'
-      type: Docker
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'python:3.6'
+          namespace: openshift
+        type: Docker
     postCommit:
       script: "python manage.py test"
 
