@@ -12,29 +12,18 @@ objects:
     annotations:
       pipeline.alpha.openshift.io/uses: '[{"name": "openshift-django", "namespace": "", "kind": "DeploymentConfig"}]'
   spec:
-    triggers:
-      -
-        type: GitHub
-        github:
-          secret: secret101
-      -
-        type: Generic
-        generic:
-          secret: secret101
     runPolicy: Serial
     source:
       type: None
     strategy:
       type: JenkinsPipeline
       env:
-        - name: DEV_PROJECT
-          value: dev
-        - name: STAGE_PROJECT
-          value: stage
       jenkinsPipelineStrategy:
         jenkinsfile: |-
             def openshiftDjangoRepo="https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django.yaml"
             def stageTag="promoteToQA"
+            def DEV_PROJECT="dev"
+            def STAGE_PROJECT="stage"
 
             pipeline{
               agent { label ""}
@@ -43,7 +32,7 @@ objects:
                   when {
                     expression {
                       openshift.withCluster() {
-                        openshift.withProject(env.DEV_PROJECT) {
+                        openshift.withProject(DEV_PROJECT) {
                           echo "checking openshift django exists in DEV"
                           return !openshift.selector("bc", "openshift-django").exists();
                         }
@@ -53,7 +42,7 @@ objects:
                   steps {
                     script {
                       openshift.withCluster() {
-                        openshift.withProject(env.DEV_PROJECT) {
+                        openshift.withProject(DEV_PROJECT) {
                           openshift.newApp(openshiftDjangoRepo).narrow("svc").expose();
                           openshift.selector("dc", "openshift-django")
                         }
@@ -64,21 +53,21 @@ objects:
                 stage('Build and Test in DEV'){
                   steps {
                     script {
-                        openshiftBuild(namespace: "${env.DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
+                        openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
                     }
                   }
                 }
                 stage('Rollout to DEV') {
                   steps {
                     script {
-                      openshiftDeploy(namespace: "${env.DEV_PROJECT}", deploymentConfig: "openshift-django", waitTime: "600000")
+                      openshiftDeploy(namespace: "${DEV_PROJECT}", deploymentConfig: "openshift-django", waitTime: "600000")
                     }
                   }
                 }
                 stage('Scale in DEV') {
                   steps {
                     script {
-                      openshiftScale(namespace: "${env.DEV_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '2')
+                      openshiftScale(namespace: "${DEV_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '2')
                     }
                   }
                 }
@@ -90,7 +79,7 @@ objects:
 
                     script {
                       openshift.withCluster() {
-                        openshift.tag("${env.DEV_PROJECT}/openshift-django:latest", "${env.STAGE_PROJECT}/openshift-django:${stageTag}")
+                        openshift.tag("${DEV_PROJECT}/openshift-django:latest", "${STAGE_PROJECT}/openshift-django:${stageTag}")
                       }
                     }
                   }
@@ -99,7 +88,7 @@ objects:
                   steps {
                     script {
                       openshift.withCluster() {
-                        openshift.withProject(env.STAGE_PROJECT) {
+                        openshift.withProject(STAGE_PROJECT) {
                           if (openshift.selector('dc', 'openshift-django').exists()) {
                               openshift.selector('dc', 'openshift-django').delete()
                               openshift.selector('svc', 'openshift-django').delete()
@@ -114,7 +103,7 @@ objects:
               stage('Scale in STAGE') {
                   steps {
                     script {
-                      openshiftScale(namespace: "${env.STAGE_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '3')
+                      openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '3')
                     }
                   }
                 }
