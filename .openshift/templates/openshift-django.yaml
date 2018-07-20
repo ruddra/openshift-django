@@ -7,9 +7,11 @@ objects:
 - apiVersion: image.openshift.io/v1
   kind: ImageStream
   metadata:
+    generation: 2
     labels:
       app: openshift-django
     name: python
+    uid: 673706ae-8c52-11e8-93af-e2ee266d1f70
   spec:
     lookupPolicy:
       local: false
@@ -19,10 +21,22 @@ objects:
         from:
           kind: DockerImage
           name: 'python:3.6'
+        generation: 2
+        importPolicy: {}
         name: '3.6'
         referencePolicy:
           type: Source
-          
+  status:
+    tags:
+      - items:
+          - created: '2018-07-20T19:23:41Z'
+            dockerImageReference: >-
+              python@sha256:e03e1aa8e0ac57fa852c9d0bcc49d492103db496bbb4448767fb1508440c7681
+            generation: 2
+            image: >-
+              sha256:e03e1aa8e0ac57fa852c9d0bcc49d492103db496bbb4448767fb1508440c7681
+        tag: '3.6'
+
 - apiVersion: v1
   kind: BuildConfig
   metadata:
@@ -131,3 +145,59 @@ objects:
     type: ClusterIP
   status:
     loadBalancer: {}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: mysql-55-centos7
+    name: mysql-55-centos7
+    uid: c21278ce-8bf8-11e8-a514-080027f414e3
+  spec:
+    clusterIP: 172.30.0.30
+    ports:
+      - name: 3306-tcp
+        port: 3306
+        protocol: TCP
+        targetPort: 3306
+    selector:
+      app: mysql-55-centos7
+      deploymentconfig: mysql-55-centos7
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: mysql-55-centos7
+  spec:
+    replicas: 1
+    selector:
+      app: mysql-55-centos7
+      deploymentconfig: mysql-55-centos7
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: mysql-55-centos7
+          deploymentconfig: mysql-55-centos7
+      spec:
+        containers:
+        - env:
+          - name: MYSQL_USER
+            value: myroot
+          - name: MYSQL_PASSWORD
+            value: myroot123
+          - name: MYSQL_DATABASE
+            value: mydjango
+          image: openshift/mysql-55-centos7@sha256:7cd33ccc63b8005810aedee0444472cc84c3e3c38fe9cd147edb964e712a1068
+          imagePullPolicy: Always
+          name: mysql-55-centos7
+          ports:
+          - containerPort: 3306
+            protocol: TCP
