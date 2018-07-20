@@ -19,9 +19,11 @@ objects:
         ref: develop
         uri: https://github.com/ruddra/openshift-django.git
       type: Git
-    strategy:
-      dockerStrategy:
-         dockerfilePath: .
+      strategy:
+        dockerStrategy:
+          dockerfilePath: ./Dockerfile
+
+
       type: Docker
     postCommit:
       script: "python manage.py test"
