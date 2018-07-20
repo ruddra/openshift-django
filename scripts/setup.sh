@@ -2,8 +2,12 @@
 
 echo "--------- starting setup ---------"
 echo "this installation has been tested in minishift only"
-echo "please use 'docker pull openshift/jenkins-2-centos7' for faster deployment"
-echo "please use 'docker pull openshift/mysql-55-centos7' for faster deployment"
+echo "please run 'docker pull openshift/jenkins-2-centos7' for faster deployment"
+echo "please run 'docker pull openshift/mysql-55-centos7' for faster deployment"
+echo "please run 'docker pull python:3.6' for faster deployment"
+
+echo "starting minishift"
+minishift start
 
 echo "login as developer"
 oc login -u developer -p 123
