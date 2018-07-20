@@ -20,6 +20,8 @@ objects:
         uri: https://github.com/ruddra/openshift-django.git
       type: Git
     strategy:
+      dockerStrategy:
+        noCache: true
       type: Docker
     postCommit:
       script: "python manage.py test"
@@ -29,9 +31,6 @@ objects:
   kind: ImageStream
   metadata:
     name: openshift-django
-  spec: 
-    tags:
-      name: latest
 
 - apiVersion: v1
   kind: DeploymentConfig
