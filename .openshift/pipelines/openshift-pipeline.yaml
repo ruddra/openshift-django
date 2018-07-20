@@ -23,9 +23,9 @@ spec:
     type: JenkinsPipeline
     env:
       - name: DEV_PROJECT
-        value: new-dev
+        value: dev
       - name: STAGE_PROJECT
-        value: new-stage
+        value: stage
     jenkinsPipelineStrategy:
       jenkinsfile: |-
           def openshiftDjangoRepo="https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django.yaml"
