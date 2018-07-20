@@ -1,1 +1,0 @@
-sonar:sonar -Dsonar.host.url=http://sonarqube:9000 
