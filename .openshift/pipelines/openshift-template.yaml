@@ -49,7 +49,7 @@ spec:
                   script {
                     openshift.withCluster() {
                       openshift.withProject(env.DEV_PROJECT) {
-                        def app = openshift.newApp(openshiftDjangoRepo)
+                        def app = openshift.newApp(mysqlRepo)
                         openshiftBuild(namespace: "${env.DEV_PROJECT}", buildConfig: "mysql-55-centos7")
                         openshiftDeploy(namespace: "${env.DEV_PROJECT}", buildConfig: "mysql-55-centos7")
                       }
@@ -72,7 +72,7 @@ spec:
                   script {
                     openshift.withCluster() {
                       openshift.withProject(env.DEV_PROJECT) {
-                        def app = openshift.newApp(gitRepo).narrow("svc").expose();
+                        def app = openshift.newApp(openshiftDjangoRepo).narrow("svc").expose();
 
                         def dc = openshift.selector("dc", "openshift-django")
                         while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
@@ -162,7 +162,6 @@ spec:
                     openshift.withCluster() {
                       openshift.withProject(env.STAGE_PROJECT) {
                         openshift.newApp("openshift-django:latest").narrow("svc").expose()
-                      }
                     }
                   }
                 }

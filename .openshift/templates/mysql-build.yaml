@@ -13,7 +13,7 @@ objects:
     resourceVersion: '219015'
     uid: c21278ce-8bf8-11e8-a514-080027f414e3
   spec:
-    clusterIP: 172.30.162.176
+    clusterIP: 172.30.192.192
     ports:
       - name: 3306-tcp
         port: 3306
