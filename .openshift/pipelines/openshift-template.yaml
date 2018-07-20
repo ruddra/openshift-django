@@ -28,7 +28,7 @@ spec:
         value: new-stage
     jenkinsPipelineStrategy:
       jenkinsfile: |-
-          def gitRepo="https://github.com/ruddra/openshift-django"
+          def gitRepo="https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-build.yaml"
           def stageTag="promoteToQA"
           pipeline{
             agent { label ""}
