@@ -9,6 +9,7 @@ WORKDIR /src
 
 RUN pip install -r requirements.pip
 RUN python manage.py migrate
+RUN python manage.py test
 
 # CMD gunicorn openshift_django.wsgi -b 0.0.0.0:3013
 CMD python manage.py runserver 0.0.0.0:3013

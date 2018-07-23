@@ -27,7 +27,6 @@ objects:
           namespace: openshift
         type: Docker
     postCommit:
-      script: "python manage.py test"
 
 - apiVersion: v1
   kind: ImageStream

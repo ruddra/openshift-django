@@ -138,5 +138,5 @@ NOSE_ARGS = [
     '--cover-package=openshift-django',
    '--verbosity=2',  # verbose output
     '--with-xunit',  # enable XUnit plugin
-    '--xunit-file=/data/xunittest.xml',  # the XUnit report file
+    '--xunit-file=xunittest.xml',  # the XUnit report file
 ]
