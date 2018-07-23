@@ -54,6 +54,10 @@ objects:
                   steps {
                     script {
                         openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
+                        def dc = openshift.selector("dc", "openshift-django")
+                        while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
+                            sleep 10
+                        }
                     }
                   }
                 }
