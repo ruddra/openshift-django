@@ -44,10 +44,6 @@ objects:
                       openshift.withCluster() {
                         openshift.withProject(DEV_PROJECT) {
                           openshift.newApp(openshiftDjangoRepo).narrow("svc").expose();
-                          def dc = openshift.selector("dc", "openshift-django")
-                          while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
-                              sleep 10
-                          }
                         }
                       }
                     }
