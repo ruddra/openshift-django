@@ -53,6 +53,10 @@ objects:
             value: myroot123
           - name: MYSQL_DATABASE
             value: mydjango
+          - name: "MYSQL_MASTER_USER"
+            value: root
+          - name: "MYSQL_MASTER_PASSWORD"
+            value: root123
           image: openshift/mysql-55-centos7@sha256:7cd33ccc63b8005810aedee0444472cc84c3e3c38fe9cd147edb964e712a1068
           imagePullPolicy: Always
           name: mysql-55-centos7
