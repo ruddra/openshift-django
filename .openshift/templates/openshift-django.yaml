@@ -16,19 +16,18 @@ objects:
     runPolicy: Serial
     source:
       git:
-        ref: develop
+        ref: master
         uri: https://github.com/ruddra/openshift-django.git
       type: Git
     strategy:
       dockerStrategy:
         from:
           kind: ImageStreamTag
-          name: python:3.6
+          name: 'python:3.6'
           namespace: openshift
-      type: Docker
+        type: Docker
     postCommit:
       script: "python manage.py test"
-
 
 - apiVersion: v1
   kind: ImageStream
@@ -44,7 +43,7 @@ objects:
       app: openshift-django
     name: openshift-django
   spec:
-    replicas: 0
+    replicas: 1
     revisionHistoryLimit: 10
     selector:
       app: openshift-django
@@ -80,7 +79,7 @@ objects:
         from:
           kind: ImageStreamTag
           name: openshift-django:latest
-          namespace: new-dev
+          namespace: dev
       type: ImageChange
   status:
     availableReplicas: 0

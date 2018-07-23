@@ -20,7 +20,7 @@ objects:
       env:
       jenkinsPipelineStrategy:
         jenkinsfile: |-
-            def openshiftDjangoRepo="https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django.yaml"
+            def openshiftDjangoRepo="https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/templates/openshift-django.yaml"
             def stageTag="promoteToQA"
             def DEV_PROJECT="dev"
             def STAGE_PROJECT="stage"
@@ -44,7 +44,10 @@ objects:
                       openshift.withCluster() {
                         openshift.withProject(DEV_PROJECT) {
                           openshift.newApp(openshiftDjangoRepo).narrow("svc").expose();
-                          openshift.selector("dc", "openshift-django")
+                          def dc = openshift.selector("dc", "openshift-django")
+                          while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
+                              sleep 10
+                          }
                         }
                       }
                     }
@@ -53,7 +56,7 @@ objects:
                 stage('Build and Test in DEV'){
                   steps {
                     script {
-                        openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
+                      openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
                     }
                   }
                 }
@@ -74,7 +77,7 @@ objects:
                 stage('Promote to STAGE?') {
                   steps {
                     timeout(time:15, unit:'MINUTES') {
-                        input message: "Promote to STAGE?", ok: "Promote"
+                      input message: "Promote to STAGE?", ok: "Promote"
                     }
 
                     script {
@@ -90,11 +93,11 @@ objects:
                       openshift.withCluster() {
                         openshift.withProject(STAGE_PROJECT) {
                           if (openshift.selector('dc', 'openshift-django').exists()) {
-                              openshift.selector('dc', 'openshift-django').delete()
-                              openshift.selector('svc', 'openshift-django').delete()
-                              openshift.selector('route', 'openshift-django').delete()
+                            openshift.selector('dc', 'openshift-django').delete()
+                            openshift.selector('svc', 'openshift-django').delete()
+                            openshift.selector('route', 'openshift-django').delete()
                           }
-                          openshift.newApp("openshift-django:${stageTag}").narrow("svc").expose()
+                        openshift.newApp("openshift-django:${stageTag}").narrow("svc").expose()
                       }
                     }
                   }
