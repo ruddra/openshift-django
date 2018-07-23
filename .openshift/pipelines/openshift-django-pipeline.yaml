@@ -56,14 +56,9 @@ objects:
                 stage('Build and Test in DEV'){
                   steps {
                     script {
-                      openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
-                    }
-                  }
-                }
-                stage('Load Test in Blue Ocean'){
-                  steps {
-                    script {
-                      sh "oc rsync openshift-django:/tmp ."
+                      def build = openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000").exists()
+                      echo build
+                      sh "oc rsync ${build}:/tmp ."
                       sh junit "xunittest.xml"
                     }
                   }
