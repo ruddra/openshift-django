@@ -56,10 +56,15 @@ objects:
                 stage('Build and Test in DEV'){
                   steps {
                     script {
-                      def build = openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000").exists()
-                      echo build
-                      sh "oc rsync ${build}:/tmp ."
-                      sh junit "xunittest.xml"
+                      openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
+                    }
+                  }
+                }
+                stage('Load Test in Blue Ocean'){
+                  steps {
+                    script {
+                      def build = openshift.selector("bc", "openshift")
+                      println build.getProperties().toString()
                     }
                   }
                 }
@@ -73,7 +78,7 @@ objects:
                 stage('Scale in DEV') {
                   steps {
                     script {
-                      openshiftScale(namespace: "${DEV_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '2')
+                      openshiftScale(namespace: "${DEV_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '1')
                     }
                   }
                 }
