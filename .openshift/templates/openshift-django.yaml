@@ -79,7 +79,7 @@ objects:
         from:
           kind: ImageStreamTag
           name: openshift-django:latest
-          namespace: new-dev
+          namespace: dev
       type: ImageChange
   status:
     availableReplicas: 0

@@ -44,7 +44,10 @@ objects:
                       openshift.withCluster() {
                         openshift.withProject(DEV_PROJECT) {
                           openshift.newApp(openshiftDjangoRepo).narrow("svc").expose();
-                          openshift.selector("dc", "openshift-django")
+                          def dc = openshift.selector("dc", "openshift-django")
+                          while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
+                              sleep 10
+                          }
                         }
                       }
                     }
@@ -61,10 +64,6 @@ objects:
                   steps {
                     script {
                       openshiftDeploy(namespace: "${DEV_PROJECT}", deploymentConfig: "openshift-django", waitTime: "600000")
-                      def dc = openshift.selector("dc", "openshift-django")
-                      while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
-                          sleep 10
-                      }
                     }
                   }
                 }
