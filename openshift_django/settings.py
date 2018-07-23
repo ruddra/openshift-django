@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pictures'
+    'pictures',
+    'django-nose'
 ]
 
 MIDDLEWARE = [
@@ -130,3 +131,12 @@ STATIC_ROOT = '/static'
 
 MEDIA_ROOT = '/data/'
 MEDIA_URL = '/media/'
+
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+NOSE_ARGS = [
+    '--cover-erase',
+    '--cover-package=MY_APP',
+    '--with-xunit',
+    '--xunit-file=xunittest.xml'
+]

@@ -16,7 +16,7 @@ objects:
     runPolicy: Serial
     source:
       git:
-        ref: master
+        ref: develop
         uri: https://github.com/ruddra/openshift-django.git
       type: Git
     strategy:
