@@ -60,6 +60,14 @@ objects:
                     }
                   }
                 }
+                stage('Load Test in Blue Ocean'){
+                  steps {
+                    script {
+                      sh "oc rsync openshift-django:/tmp ."
+                      sh junit "xunittest.xml"
+                    }
+                  }
+                }
                 stage('Rollout to DEV') {
                   steps {
                     script {
