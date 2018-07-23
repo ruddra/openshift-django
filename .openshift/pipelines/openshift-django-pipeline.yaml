@@ -60,14 +60,6 @@ objects:
                     }
                   }
                 }
-                stage('Load Test in Blue Ocean'){
-                  steps {
-                    script {
-                      def build = openshift.selector("bc", "openshift")
-                      println build.getProperties().toString()
-                    }
-                  }
-                }
                 stage('Rollout to DEV') {
                   steps {
                     script {

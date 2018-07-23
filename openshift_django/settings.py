@@ -136,7 +136,5 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 NOSE_ARGS = [
     '--cover-erase',
     '--cover-package=openshift-django',
-   '--verbosity=2',  # verbose output
-    '--with-xunit',  # enable XUnit plugin
-    '--xunit-file=/data/xunittest.xml',  # the XUnit report file
+   '--verbosity=2',# the XUnit report file
 ]
