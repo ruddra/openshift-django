@@ -31,7 +31,7 @@ echo "exposing jenkins"
 oc expose svc/jenkins-2-centos7
 
 echo "installing mysql which will be available at IP: 172.30.0.30"
-oc new-app -f "https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/templates/mysql-build.yaml"
+oc new-app -f "https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/templates/mysql-template.yaml"
 
 echo "loading pipeline into cicd project"
 oc new-app -f "https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/pipelines/openshift-django-pipeline.yaml"
