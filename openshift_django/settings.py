@@ -81,8 +81,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mydjango',
-        'USER': 'myroot',
-        'PASSWORD': 'myroot123',
+        'USER': 'root',
+        'PASSWORD': 'root123',
         'HOST': '172.30.0.30',  # Your openshift host
         'PORT': '3306',
     }
