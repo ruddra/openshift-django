@@ -6,4 +6,4 @@ Here you can deploy this application using with or without pipelines. Please rea
 http://ruddra.com/2018/02/24/deploy-django-to-openshift-3/
 
 You can use pipeline to deploy this app. Please read here for more detials:
-
+http://ruddra.com/2018/07/24/django-openshift-pipeline/
