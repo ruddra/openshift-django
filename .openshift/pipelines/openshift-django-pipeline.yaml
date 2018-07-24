@@ -52,13 +52,7 @@ objects:
                 stage('Build and Test in DEV'){
                   steps {
                     script {
-                      openshift.withCluster() {
-                        openshift.withProject(DEV_PROJECT) {
-                          def odBC = openshift.selector("bc", "openshift-django")
-                          def result = odBC.startBuild('--follow')
-                          echo result
-                        }
-                      }
+                      openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
                     }
                   }
                 }
@@ -73,6 +67,27 @@ objects:
                   steps {
                     script {
                       openshiftScale(namespace: "${DEV_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '1')
+                    }
+                  }
+                }
+                stage('Save Test in DEV') {
+                  steps {
+                    script {
+                      openshift.withCluster() {
+                        openshift.withProject(DEV_PROJECT) {
+                          def module = 'openshift-django'
+                          def dcObj = openshift.selector('dc', module).object()
+                          def podSelector = openshift.selector('pod', [deployment: "${module}-${dcObj.status.latestVersion}"])
+                          podSelector.untilEach {
+                              def podName=it.name()
+                              echo "pod: ${podName}"
+                              sh 'rm -rf openshift-django'
+                              sh 'mkdir /openshift-django/deployment'
+                              sh "oc rsync pods/${podName}:/tmp /openshift-django/deployment"
+                              junit "/openshift-django/deployment/xmlunittest.xml"
+                          }
+                        }
+                      }
                     }
                   }
                 }
