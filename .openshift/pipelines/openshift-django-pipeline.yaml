@@ -52,7 +52,10 @@ objects:
                 stage('Build and Test in DEV'){
                   steps {
                     script {
-                      openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
+                      # openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
+                      def odbc=openshift.selector('bc', 'openshift');
+                      def result = odbc.startBuild('--follow')
+                      echo "result = ${result}"
                     }
                   }
                 }
