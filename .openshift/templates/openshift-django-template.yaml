@@ -26,8 +26,10 @@ objects:
           name: 'python:3.6'
           namespace: openshift
         type: Docker
+    path:
+      - destinationDir: test_results/ 
+        sourcePath: /tmp/xunittest.xml
     postCommit:
-      script: "python manage.py test && cat /tmp/xunittest.xml"
 
 - apiVersion: v1
   kind: ImageStream
