@@ -137,6 +137,6 @@ NOSE_ARGS = [
     '--cover-erase',
     '--cover-package=openshift-django',
     '--verbosity=2',
-    '--junit-xml',
+    '--with-xunit',
     '--xunit-file=/tmp/xunittest.xml'
 ]
