@@ -131,4 +131,12 @@ STATIC_ROOT = '/static'
 MEDIA_ROOT = '/data/'
 MEDIA_URL = '/media/'
 
-TEST_RUNNER = 'xmlrunner.extra.djangotestrunner.XMLTestRunner'
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+NOSE_ARGS = [
+    '--cover-erase',
+    '--cover-package=openshift-django',
+    '--verbosity=2',
+    '-X',
+     '--junit-xml'
+]
