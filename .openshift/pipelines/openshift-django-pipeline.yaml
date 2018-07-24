@@ -24,6 +24,7 @@ objects:
             def stageTag="promoteToQA"
             def DEV_PROJECT="dev"
             def STAGE_PROJECT="stage"
+            def templateName="openshift-django"
 
             pipeline{
               agent { label ""}
@@ -34,7 +35,7 @@ objects:
                       openshift.withCluster() {
                         openshift.withProject(DEV_PROJECT) {
                           echo "checking openshift django exists in DEV"
-                          return !openshift.selector("bc", "openshift-django").exists();
+                          return !openshift.selector("bc", "${templateName}").exists();
                         }
                       }
                     }
@@ -52,24 +53,21 @@ objects:
                 stage('Build and Test in DEV'){
                   steps {
                     script {
-                      # openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "openshift-django", showBuildLogs: 'true',  waitTime: "600000")
-                      def odbc=openshift.selector('bc', 'openshift');
-                      def result = odbc.startBuild('--follow')
-                      echo "result = ${result}"
+                      openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "${templateName}", showBuildLogs: 'true',  waitTime: "600000")
                     }
                   }
                 }
                 stage('Rollout to DEV') {
                   steps {
                     script {
-                      openshiftDeploy(namespace: "${DEV_PROJECT}", deploymentConfig: "openshift-django", waitTime: "600000")
+                      openshiftDeploy(namespace: "${DEV_PROJECT}", deploymentConfig: "${templateName}", waitTime: "600000")
                     }
                   }
                 }
                 stage('Scale in DEV') {
                   steps {
                     script {
-                      openshiftScale(namespace: "${DEV_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '1')
+                      openshiftScale(namespace: "${DEV_PROJECT}", deploymentConfig: "${templateName}", replicaCount: '1')
                     }
                   }
                 }
@@ -81,7 +79,7 @@ objects:
 
                     script {
                       openshift.withCluster() {
-                        openshift.tag("${DEV_PROJECT}/openshift-django:latest", "${STAGE_PROJECT}/openshift-django:${stageTag}")
+                        openshift.tag("${DEV_PROJECT}/${templateName}:latest", "${STAGE_PROJECT}/${templateName}:${stageTag}")
                       }
                     }
                   }
@@ -91,12 +89,12 @@ objects:
                     script {
                       openshift.withCluster() {
                         openshift.withProject(STAGE_PROJECT) {
-                          if (openshift.selector('dc', 'openshift-django').exists()) {
-                            openshift.selector('dc', 'openshift-django').delete()
-                            openshift.selector('svc', 'openshift-django').delete()
-                            openshift.selector('route', 'openshift-django').delete()
+                          if (openshift.selector('dc', "${templateName}").exists()) {
+                            openshift.selector('dc', "${templateName}").delete()
+                            openshift.selector('svc', "${templateName}").delete()
+                            openshift.selector('route', "${templateName}").delete()
                           }
-                        openshift.newApp("openshift-django:${stageTag}").narrow("svc").expose()
+                        openshift.newApp("${templateName}:${stageTag}").narrow("svc").expose()
                       }
                     }
                   }
@@ -105,7 +103,7 @@ objects:
               stage('Scale in STAGE') {
                   steps {
                     script {
-                      openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '3')
+                      openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "${templateName}", replicaCount: '3')
                     }
                   }
                 }
