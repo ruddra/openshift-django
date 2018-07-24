@@ -70,27 +70,6 @@ objects:
                     }
                   }
                 }
-                stage('Save Test in DEV') {
-                  steps {
-                    script {
-                      openshift.withCluster() {
-                        openshift.withProject(DEV_PROJECT) {
-                          def module = 'openshift-django'
-                          def dcObj = openshift.selector('dc', module).object()
-                          def podSelector = openshift.selector('pod', [deployment: "${module}-${dcObj.status.latestVersion}"])
-                          podSelector.untilEach {
-                              def podName=it.name()
-                              echo "pod: ${podName}"
-                              sh 'rm -rf openshift-django'
-                              sh 'mkdir /openshift-django/deployment'
-                              sh "oc rsync pods/${podName}:/tmp /openshift-django/deployment"
-                              junit "/openshift-django/deployment/xmlunittest.xml"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
                 stage('Promote to STAGE?') {
                   steps {
                     timeout(time:15, unit:'MINUTES') {
