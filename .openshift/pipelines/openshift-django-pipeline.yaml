@@ -12,6 +12,10 @@ objects:
     annotations:
       pipeline.alpha.openshift.io/uses: '[{"name": "openshift-django", "namespace": "", "kind": "DeploymentConfig"}]'
   spec:
+    trigger:
+     - github:
+      secret: "your secret"
+    type: GitHub
     runPolicy: Serial
     source:
       type: None
