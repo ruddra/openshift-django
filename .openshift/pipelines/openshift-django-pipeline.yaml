@@ -24,7 +24,7 @@ objects:
       env:
       jenkinsPipelineStrategy:
         jenkinsfile: |-
-            def openshiftDjangoRepo="https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-template.yaml"
+            def openshiftDjangoRepo="https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/templates/openshift-django-template.yaml"
             def stageTag="promoteToQA"
             def DEV_PROJECT="dev"
             def STAGE_PROJECT="stage"
