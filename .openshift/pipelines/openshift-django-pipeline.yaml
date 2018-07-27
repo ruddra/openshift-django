@@ -1,118 +1,15 @@
 apiVersion: v1
-kind: Template
+kind: BuildConfig
 metadata:
-  name: openshift-django-pipeline
-objects:
-- apiVersion: v1
-  kind: BuildConfig
-  metadata:
+  name: djangopipeline
+  labels:
     name: djangopipeline
-    labels:
-      name: djangopipeline
-    annotations:
-      pipeline.alpha.openshift.io/uses: '[{"name": "openshift-django", "namespace": "", "kind": "DeploymentConfig"}]'
-  spec:
-    trigger:
-     - type: GitHub
-       github:
-        secret: "your secret"
-    runPolicy: Serial
-    source:
-      type: None
-    strategy:
-      type: JenkinsPipeline
-      env:
-      jenkinsPipelineStrategy:
-        jenkinsfile: |-
-            def openshiftDjangoRepo="https://raw.githubusercontent.com/ruddra/openshift-django/master/.openshift/templates/openshift-django-template.yaml"
-            def stageTag="promoteToQA"
-            def DEV_PROJECT="dev"
-            def STAGE_PROJECT="stage"
-            def templateName="openshift-django"
-
-            pipeline{
-              agent { label ""}
-              stages{
-                stage('Create in DEV') {
-                  when {
-                    expression {
-                      openshift.withCluster() {
-                        openshift.withProject(DEV_PROJECT) {
-                          echo "checking openshift django exists in DEV"
-                          return !openshift.selector("bc", "${templateName}").exists();
-                        }
-                      }
-                    }
-                  }
-                  steps {
-                    script {
-                      openshift.withCluster() {
-                        openshift.withProject(DEV_PROJECT) {
-                          openshift.newApp(openshiftDjangoRepo).narrow("svc").expose();
-                        }
-                      }
-                    }
-                  }
-                }
-                stage('Build and Test in DEV'){
-                  steps {
-                    script {
-                      openshiftBuild(namespace: "${DEV_PROJECT}", buildConfig: "${templateName}", showBuildLogs: 'true',  waitTime: "600000")
-                    }
-                  }
-                }
-                stage('Rollout to DEV') {
-                  steps {
-                    script {
-                      openshiftDeploy(namespace: "${DEV_PROJECT}", deploymentConfig: "${templateName}", waitTime: "600000")
-                    }
-                  }
-                }
-                stage('Scale in DEV') {
-                  steps {
-                    script {
-                      openshiftScale(namespace: "${DEV_PROJECT}", deploymentConfig: "${templateName}", replicaCount: '1')
-                    }
-                  }
-                }
-                stage('Promote to STAGE?') {
-                  steps {
-                    timeout(time:15, unit:'MINUTES') {
-                      input message: "Promote to STAGE?", ok: "Promote"
-                    }
-
-                    script {
-                      openshift.withCluster() {
-                        openshift.tag("${DEV_PROJECT}/${templateName}:latest", "${STAGE_PROJECT}/${templateName}:${stageTag}")
-                      }
-                    }
-                  }
-                }
-                stage('Rollout to STAGE') {
-                  steps {
-                    script {
-                      openshift.withCluster() {
-                        openshift.withProject(STAGE_PROJECT) {
-                          if (openshift.selector('dc', "${templateName}").exists()) {
-                            openshift.selector('dc', "${templateName}").delete()
-                            openshift.selector('svc', "${templateName}").delete()
-                            openshift.selector('route', "${templateName}").delete()
-                          }
-                        openshift.newApp("${templateName}:${stageTag}").narrow("svc").expose()
-                      }
-                    }
-                  }
-                }
-              }
-              stage('Scale in STAGE') {
-                  steps {
-                    script {
-                      openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "${templateName}", replicaCount: '3')
-                    }
-                  }
-                }
-              }
-            }
-    output:
-    resources:
-    postCommit:
+  annotations:
+    pipeline.alpha.openshift.io/uses: '[{"name": "openshift-django", "namespace": "", "kind": "DeploymentConfig"}]'
+spec:
+  runPolicy: Serial
+  strategy:
+    type: JenkinsPipeline
+    env:
+    jenkinsPipelineStrategy:
+      jenkinsfile: jenkinsfile
