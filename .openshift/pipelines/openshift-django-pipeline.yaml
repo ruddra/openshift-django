@@ -10,6 +10,5 @@ spec:
   runPolicy: Serial
   strategy:
     type: JenkinsPipeline
-    env:
     jenkinsPipelineStrategy:
-      jenkinsfile: jenkinsfile
+      jenkinsfile: Jenkinsfile
