@@ -31,7 +31,7 @@ spec:
           stages {
               stage('Get Latest Code') {
                   steps {
-                    git branch: "${GIT_BRANCH}", url: "${GIT_BRANCH}"
+                    git branch: "${GIT_BRANCH}", url: "${GIT_REPO}"
                   }
               }
               stage ("Install Application Dependencies") {
@@ -47,6 +47,7 @@ spec:
                       source activate ${APPLICATION_NAME}_env
                       python manage.py test
                     '''
+                    junit "xunittest.xml"
                   }
               }
               stage('Build Application') {

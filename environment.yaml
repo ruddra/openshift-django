@@ -1,9 +1,11 @@
 name: openshift-django
+channels:
+- defaults
 dependencies:
-  - django>=2.0
-  - mysqlclient==1.3.12
-  - pillow==5.0.0
-  - gunicorn==19.7.1
-  - whitenoise==3.3.1
-  - django-nose
-  - coverage
+- django>=2.0
+- mysqlclient=1.3.12
+- pillow=5.0.0
+- gunicorn=19.7.1
+- whitenoise=3.3.1
+- django-nose
+- coverage
