@@ -9,3 +9,4 @@ dependencies:
 - whitenoise=3.3.1
 - django-nose
 - coverage
+prefix: /opt/conda/envs/openshift-django
