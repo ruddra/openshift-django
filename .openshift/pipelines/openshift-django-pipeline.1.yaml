@@ -34,19 +34,35 @@ spec:
                     git branch: "${GIT_BRANCH}", url: "${GIT_REPO}"
                   }
               }
+              stage('Install Virtual Environment') {
+                steps {
+                  script{
+                    def installed = fileExists('bin/activate')
+                    if(!installed){
+                      sh'''
+                      pip install virtualenv
+                      virtualenv --no-site-packages .
+                      '''
+                    }
+                  }
+                }
+              }
               stage ("Install Application Dependencies") {
                 steps {
                   echo 'Installing Dependencies..'
-                  sh 'conda env create -n ${APPLICATION_NAME}_env -f environment.yml'
+                  sh'''
+                  source bin/activate
+                  pip install -r requirements.pip
+                  deactivate
+                  '''
                 }
               }
               stage('Test Application') {
                   steps {
                     echo 'Testing..'
                     sh '''
-                    source activate ${APPLICATION_NAME}_env
+                    source bin/activate
                     python manage.py test
-                    source deactivate
                     '''
                     junit "xunittest.xml"
                   }
