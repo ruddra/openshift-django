@@ -3,10 +3,10 @@ channels:
 - defaults
 dependencies:
 - django>=2.0
-- mysqlclient=1.3.12
+- mysql-connector-python
 - pillow=5.0.0
 - gunicorn=19.7.1
-- whitenoise
 - django-nose
 - coverage
+- Whitenoise
 prefix: /opt/conda/envs/openshiftdjango
