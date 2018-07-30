@@ -6,7 +6,5 @@ dependencies:
 - mysql-connector-python
 - pillow=5.0.0
 - gunicorn=19.7.1
-- django-nose
 - coverage
-- Whitenoise
 prefix: /opt/conda/envs/openshiftdjango

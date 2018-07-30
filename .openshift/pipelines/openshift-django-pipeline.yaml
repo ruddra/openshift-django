@@ -37,14 +37,21 @@ spec:
               stage ("Install Application Dependencies") {
                 steps {
                   echo 'Installing Dependencies..'
-                  sh 'while read requirement; do conda install --yes $requirement; done < requirements.pip'
+                  sh 'conda env create -n ${APPLICATION_NAME}_env -f environment.yml'
+                  sh '''
+                  source activate ${APPLICATION_NAME}_env
+                  conda install -c conda-forge django-nose 
+                  conda install -c conda-forge whitenoise
+                  deactivate
+                  '''
                 }
               }
               stage('Test Application') {
                   steps {
                     echo 'Testing..'
                     sh '''
-                      python manage.py test
+                    source activate ${APPLICATION_NAME}_env
+                    python manage.py test
                     '''
                     junit "xunittest.xml"
                   }
