@@ -34,7 +34,7 @@ spec:
                     git branch: "${GIT_BRANCH}", url: "${GIT_REPO}"
                   }
               }
-              stage ("Install Application Dependencies") {
+              stage ("Install Dependencies") {
                 steps {
                   echo 'Installing Dependencies..'
                   sh 'conda env create -n ${APPLICATION_NAME}_env -f environment.yml'

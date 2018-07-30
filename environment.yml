@@ -5,6 +5,7 @@ channels:
 dependencies:
 - django>=2.0
 - mysql-connector-python
+- python-mysql
 - pillow=5.0.0
 - gunicorn=19.7.1
 - coverage
