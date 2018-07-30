@@ -26,40 +26,27 @@ spec:
               DEV_PROJECT = "dev"
               STAGE_PROJECT = "stage"
               TEMPLATE_NAME = "openshift-django"
-              VENV_NAME = 'osdenv'
-              VENV_PATH = '/virtualenvs'
           }
 
           stages {
-              
-              def installed = fileExists '${VENV_PATH}/${VENV_NAME}/bin/activate'
-
-              if (!installed) {
-                  stage("Install Python Virtual Enviroment") {
-                      sh "pip install virtualenv --upgrade"
-                      sh 'virtualenv --no-site-packages ${VENV_PATH}/${VENV_NAME}'
-                  }
-              }
               stage('Get Latest Code') {
                   steps {
-                      git branch: '${GIT_BRANCH}', url: '${GIT_BRANCH}'
+                    git branch: "${GIT_BRANCH}", url: "${GIT_BRANCH}"
                   }
               }
               stage ("Install Application Dependencies") {
+                steps {
                   echo 'Installing Dependencies..'
-                  sh '''
-                      source ${VENV_PATH}/${VENV_NAME}/bin/activate
-                      pip install -r requirements.pip
-                      deactivate
-                  '''
+                  sh 'conda env create -n ${APPLICATION_NAME}_env -f environment.yml'
+                }
               }
               stage('Test Application') {
                   steps {
-                      echo 'Testing..'
-                      sh '''
-                      source ${VENV_PATH}/${VENV_NAME}/bin/activate
+                    echo 'Testing..'
+                    sh '''
+                      source activate ${APPLICATION_NAME}_env
                       python manage.py test
-                      '''
+                    '''
                   }
               }
               stage('Build Application') {
@@ -67,7 +54,7 @@ spec:
                       script {
                           openshift.withCluster() {
                               openshift.withProject() {
-                                  openshiftBuild(buildConfig: '${APPLICATION_NAME}', showBuildLogs: 'true')
+                                  openshiftBuild(buildConfig: "${APPLICATION_NAME}", showBuildLogs: 'true')
                               }
                           }
                       }
@@ -78,10 +65,11 @@ spec:
                       script {
                           openshift.withCluster() {
                               openshift.withProject() {
-                                  openshiftDeploy(deploymentConfig: '${APPLICATION_NAME}')
+                                  openshiftDeploy(deploymentConfig: "${APPLICATION_NAME}")
                               }
                           }
                       }
                   }
               }
           }
+        }
