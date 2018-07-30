@@ -1,0 +1,74 @@
+pipeline {
+    agent {
+        node {label 'python'}
+    }
+
+    environment {
+        APPLICATION_NAME = 'openshift-django'
+        TEMPLATE = "https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-template.yaml"
+        GIT_REPO="http://github.com/ruddra/openshift-django.git"
+        GIT_BRANCH="develop"
+        STAGE_TAG = "promoteToQA"
+        DEV_PROJECT = "dev"
+        STAGE_PROJECT = "stage"
+        TEMPLATE_NAME = "openshift-django"
+        VENV_NAME = 'osdenv'
+        VENV_PATH = '/virtualenvs'
+    }
+
+    stages {
+        
+        def installed = fileExists '${VENV_PATH}/${VENV_NAME}/bin/activate'
+
+        if (!installed) {
+            stage("Install Python Virtual Enviroment") {
+                sh "pip install virtualenv --upgrade"
+                sh 'virtualenv --no-site-packages ${VENV_PATH}/${VENV_NAME}'
+            }
+        }
+        stage('Get Latest Code') {
+            steps {
+                git branch: '${GIT_BRANCH}', url: '${GIT_BRANCH}'
+            }
+        }
+        stage ("Install Application Dependencies") {
+            echo 'Installing Dependencies..'
+            sh '''
+                source ${VENV_PATH}/${VENV_NAME}/bin/activate
+                pip install -r requirements.pip
+                deactivate
+            '''
+        }
+        stage('Test Application') {
+            steps {
+                echo 'Testing..'
+                sh '''
+                source ${VENV_PATH}/${VENV_NAME}/bin/activate
+                python manage.py test
+                '''
+            }
+        }
+        stage('Build Application') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withProject() {
+                            openshiftBuild(buildConfig: '${APPLICATION_NAME}', showBuildLogs: 'true')
+                        }
+                    }
+                }
+            }
+        }
+        stage('Deploy Application') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withProject() {
+                            openshiftDeploy(deploymentConfig: '${APPLICATION_NAME}')
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

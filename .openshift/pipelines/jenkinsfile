@@ -7,6 +7,16 @@ def templateName="openshift-django"
 pipeline{
     agent { label "python"}
     stages{
+    stage('Build App') {
+        steps {
+            git branch: 'develop', url: 'http://github.com/ruddra/openshift-django.git'
+            script {
+                def pom = readMavenPom file: 'pom.xml'
+                version = pom.version
+            }
+            sh "${mvnCmd} install -DskipTests=true"
+        }
+    }
     stage('Create in DEV') {
         when {
         expression {
