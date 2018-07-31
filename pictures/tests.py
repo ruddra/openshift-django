@@ -10,4 +10,4 @@ class DummyTest(TestCase):
         self.assertEqual(1, 1)
 
     def test_dummy_three(self):
-        self.assertEqual(True, True)
+        self.assertEqual(True, False)
