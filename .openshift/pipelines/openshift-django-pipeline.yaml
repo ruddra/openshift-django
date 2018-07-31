@@ -42,7 +42,7 @@ spec:
               }
               stage('Test Application') {
                   steps {
-                    echo 'Testing..'
+                    echo 'Running Tests'
                     sh '''
                     source activate ${APPLICATION_NAME}_env
                     python manage.py test
@@ -51,20 +51,26 @@ spec:
                     junit "xunittest.xml"
                   }
               }
-              stage('Store Artifacts'){
+              stage('Store Artifact'){
                   steps{
                       script{
-                          def regExMatch     = /\/|\./,
-                            safeBuildName  = jenkins.branch.MultiBranchProject.rawDecode(env.APPLICATION_NAME).replaceAll(regExMatch, "-"),
+                        echo "Stroing Artifact"
+                        def safeBuildName  = "${APPLICATION_NAME}_${BUILD_NUMBER}",
                             artifactFolder = "target",
                             fullFileName   = "${safeBuildName}.tar.gz",
-                            applicationZip = "${artifactFolder}/${fullFileName}";
-                            def needTargetPath = !fileExists("${artifactFolder}")
-                            if (needTargetPath) {
-                                sh "mkdir ${artifactFolder}"
-                            }
-                            sh "tar -czvf ${applicationZip} ."
-                            archiveArtifacts artifacts: "${applicationZip}", excludes: null, onlyIfSuccessful: true
+                            applicationZip = "${artifactFolder}/${fullFileName}"
+                            applicationDir = ["./openshift_django",
+                                              "./pictures",
+                                              "./requirements.pip",
+                                              "./manage.py",
+                                              "./Dockerfile",
+                                              ].join(" ");
+                        def needTargetPath = !fileExists("${artifactFolder}")
+                        if (needTargetPath) {
+                            sh "mkdir ${artifactFolder}"
+                        }
+                        sh "tar -czvf ${applicationZip} ${applicationDir}"
+                        archiveArtifacts artifacts: "${applicationZip}", excludes: null, onlyIfSuccessful: true
                       }
                   }
               }
@@ -81,9 +87,10 @@ spec:
                 }
                 steps {
                     script {
+                        echo "Creating Image Builder"
                         openshift.withCluster() {
                             openshift.withProject(DEV_PROJECT) {
-                                openshift.newBuild('$', "--name=${TEMPLATE_NAME}");
+                                openshift.newBuild(BUILD_TEMPLATE, "--name=${TEMPLATE_NAME}");
                             
                               }
                           }
@@ -91,82 +98,82 @@ spec:
                   }
               }
               stage('Build Image') {
-                steps {
-                  sh "rm -rf oc-build && mkdir -p oc-build/deployments"
-
-                  sh "cp target/ oc-build/deployments/ROOT.tar.gz"
+                  steps {
+                      echo "Building Image"
+                      sh "rm -rf oc-build && mkdir -p oc-build/deployments"
+                      sh "cp ${applicationZip} oc-build/deployments/ROOT.tar.gz"
                   
-                  script {
-                    openshift.withCluster() {
-                      openshift.withProject(env.DEV_PROJECT) {
-                        openshift.selector("bc", "$TEMPLATE_NAME").startBuild("--from-archive=oc-build", "--wait=true")
+                      script {
+                          openshift.withCluster() {
+                          openshift.withProject(env.DEV_PROJECT) {
+                              openshift.selector("bc", "$TEMPLATE_NAME").startBuild("--from-archive=oc-build/ROOT.tar.gz", "--wait=true")
+                              }
+                          }
                       }
-                    }
                   }
-                }
               }
-              stage('Deploy to DEV') {
-                when {
-                  expression {
-                    openshift.withCluster() {
-                      openshift.withProject(env.DEV_PROJECT) {
-                        return !openshift.selector('dc', "${APPLICATION_NAME}").exists()
-                      }
+              stage('Rollout to DEV') {
+                  when {
+                      expression {
+                        openshift.withCluster() {
+                          openshift.withProject(env.DEV_PROJECT) {
+                            return !openshift.selector('dc', "${APPLICATION_NAME}").exists()
+                            }
+                        }
                     }
-                  }
                 }
                 steps {
-                  script {
-                    openshift.withCluster() {
-                      openshift.withProject(env.DEV_PROJECT) {
-                        def app = openshift.newApp("${TEMPLATE_NAME}:latest")
-                        app.narrow("svc").expose();
-
-                        def dc = openshift.selector("dc", "tasks")
-                        while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
-                            sleep 10
-                        }
+                    echo "Deploying to ${DEV_PROJECT}"
+                    script {
+                        openshift.withCluster() {
+                            openshift.withProject(env.DEV_PROJECT) {
+                                def app = openshift.newApp("${TEMPLATE_NAME}:latest")
+                                app.narrow("svc").expose();
+                                def dc = openshift.selector("dc", "tasks")
+                                while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
+                                    sleep 10
+                                  }
+                              }
+                          }
                       }
-                    }
                   }
-                }
               }
               stage('Promote to STAGE?') {
                   steps {
-                    timeout(time:15, unit:'MINUTES') {
-                      input message: "Promote to STAGE?", ok: "Promote"
-                    }
-                    script {
-                      openshift.withCluster() {
-                        openshift.tag("${DEV_PROJECT}/openshift-django:latest", "${STAGE_PROJECT}/openshift-django:${stageTag}")
+                      timeout(time:15, unit:'MINUTES') {
+                           input message: "Promote to STAGE?", ok: "Promote"
                       }
-                    }
-                  }
-                }
-                stage('Rollout to STAGE') {
+                      script {
+                          openshift.withCluster() {
+                          openshift.tag("${DEV_PROJECT}/openshift-django:latest", "${STAGE_PROJECT}/openshift-django:${stageTag}")
+                            }
+                        }
+                   }
+              }
+              stage('Rollout to STAGE') {
                   steps {
-                    script {
-                      openshift.withCluster() {
-                        openshift.withProject(STAGE_PROJECT) {
-                          if (openshift.selector('dc', 'openshift-django').exists()) {
-                            openshift.selector('dc', 'openshift-django').delete()
-                            openshift.selector('svc', 'openshift-django').delete()
-                            openshift.selector('route', 'openshift-django').delete()
-                          }
-                        openshift.newApp("openshift-django:${stageTag}").narrow("svc").expose()
-                      }
-                    }
+                      echo "Rollout to ${STAGE_PROJECT}"
+                      script {
+                            openshift.withCluster() {
+                              openshift.withProject(STAGE_PROJECT) {
+                                  if (openshift.selector('dc', 'openshift-django').exists()) {
+                                      openshift.selector('dc', 'openshift-django').delete()
+                                      openshift.selector('svc', 'openshift-django').delete()
+                                       openshift.selector('route', 'openshift-django').delete()
+                                }
+                            openshift.newApp("openshift-django:${stageTag}").narrow("svc").expose()
+                            }
+                         }
+                      } 
                   }
-                }
               }
               stage('Scale in STAGE') {
                   steps {
-                    script {
-                      openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '3')
+                      echo "Scale in ${STAGE_PROJECT}"
+                      script {
+                          openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '3')
+                        }
                     }
-                  }
                 }
-              }
             }
-          }
         }
