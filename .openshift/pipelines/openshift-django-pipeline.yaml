@@ -153,7 +153,7 @@ spec:
                             openshift.withProject(env.DEV_PROJECT) {
                                 def app = openshift.newApp("${TEMPLATE_NAME}:latest")
                                 app.narrow("svc").expose();
-                                def dc = openshift.selector("dc", "tasks")
+                                def dc = openshift.selector("dc", "${TEMPLATE_NAME}")
                                 while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
                                     sleep 10
                                   }
