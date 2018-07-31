@@ -27,15 +27,11 @@ spec:
               STAGE_PROJECT = "stage"
               TEMPLATE_NAME = "openshift-django"
               ARTIFACT_FOLDER = "target"
-              GIT_COMMIT=""
           }
           stages {
               stage('Get Latest Code') {
                   steps {
                     git branch: "${GIT_BRANCH}", url: "${GIT_REPO}"
-                    script{
-                        GIT_COMMIT=sh(script: "git log -1", returnStatus: true)
-                    }
                   }
               }
               stage ("Install Dependencies") {
