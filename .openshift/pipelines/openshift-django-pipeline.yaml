@@ -90,8 +90,7 @@ spec:
                         echo "Creating Image Builder"
                         openshift.withCluster() {
                             openshift.withProject(DEV_PROJECT) {
-                                openshift.newBuild(BUILD_TEMPLATE, "--name=${TEMPLATE_NAME}");
-                            
+                                openshift.newApp(${BUILD_TEMPLATE});
                               }
                           }
                       }
@@ -117,7 +116,7 @@ spec:
                       expression {
                         openshift.withCluster() {
                           openshift.withProject(env.DEV_PROJECT) {
-                            return !openshift.selector('dc', "${APPLICATION_NAME}").exists()
+                            return !openshift.selector('dc', "${TEMPLATE_NAME}").exists()
                             }
                         }
                     }
@@ -145,7 +144,7 @@ spec:
                       }
                       script {
                           openshift.withCluster() {
-                          openshift.tag("${DEV_PROJECT}/openshift-django:latest", "${STAGE_PROJECT}/openshift-django:${stageTag}")
+                          openshift.tag("${DEV_PROJECT}/${TEMPLATE_NAME}:latest", "${STAGE_PROJECT}/${TEMPLATE_NAME}:${stageTag}")
                             }
                         }
                    }
@@ -156,12 +155,12 @@ spec:
                       script {
                             openshift.withCluster() {
                               openshift.withProject(STAGE_PROJECT) {
-                                  if (openshift.selector('dc', 'openshift-django').exists()) {
-                                      openshift.selector('dc', 'openshift-django').delete()
-                                      openshift.selector('svc', 'openshift-django').delete()
-                                       openshift.selector('route', 'openshift-django').delete()
+                                  if (openshift.selector('dc', '${TEMPLATE_NAME}').exists()) {
+                                      openshift.selector('dc', '${TEMPLATE_NAME}').delete()
+                                      openshift.selector('svc', '${TEMPLATE_NAME}').delete()
+                                       openshift.selector('route', '${TEMPLATE_NAME}').delete()
                                 }
-                            openshift.newApp("openshift-django:${stageTag}").narrow("svc").expose()
+                            openshift.newApp("${TEMPLATE_NAME}:${stageTag}").narrow("svc").expose()
                             }
                          }
                       } 
@@ -171,7 +170,7 @@ spec:
                   steps {
                       echo "Scale in ${STAGE_PROJECT}"
                       script {
-                          openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "openshift-django", replicaCount: '3')
+                          openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "${TEMPLATE_NAME}", replicaCount: '3')
                         }
                     }
                 }
