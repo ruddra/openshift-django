@@ -20,74 +20,233 @@ spec:
           environment {
               APPLICATION_NAME = 'openshift-django'
               TEMPLATE = "https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-template.yaml"
+              BUILD_TEMPLATE = "https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-build.yaml"
               GIT_REPO="http://github.com/ruddra/openshift-django.git"
               GIT_BRANCH="develop"
               STAGE_TAG = "promoteToQA"
               DEV_PROJECT = "dev"
               STAGE_PROJECT = "stage"
               TEMPLATE_NAME = "openshift-django"
+              ARTIFACT_FOLDER = "target"
           }
-
           stages {
               stage('Get Latest Code') {
                   steps {
                     git branch: "${GIT_BRANCH}", url: "${GIT_REPO}"
+                    slackSend(message="started build ${env.APPLICATION_NAME} (${env.BUILD_NUMBER}), repo ${GIT_BRANCH}/${GIT_BRANCH} ")
+                  }
+                post {
+                    failure {
+                       script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
                   }
               }
-              stage('Install Virtual Environment') {
-                steps {
-                  script{
-                    def installed = fileExists('bin/activate')
-                    if(!installed){
-                      sh'''
-                      pip install virtualenv
-                      virtualenv --no-site-packages .
-                      '''
-                    }
-                  }
-                }
-              }
-              stage ("Install Application Dependencies") {
+              stage ("Install Dependencies") {
                 steps {
                   echo 'Installing Dependencies..'
-                  sh'''
-                  source bin/activate
-                  pip install -r requirements.pip
-                  deactivate
-                  '''
+                  sh 'conda env create -n ${APPLICATION_NAME}_env -f environment.yml'
                 }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
               stage('Test Application') {
                   steps {
-                    echo 'Testing..'
+                    echo 'Running Tests'
                     sh '''
-                    source bin/activate
+                    source activate ${APPLICATION_NAME}_env
                     python manage.py test
+                    source deactivate
                     '''
                     junit "xunittest.xml"
                   }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
-              stage('Build Application') {
-                  steps {
-                      script {
+              stage('Store Artifact'){
+                  steps{
+                      script{
+                        echo "Stroing Artifact"
+                        def safeBuildName  = "${APPLICATION_NAME}_${BUILD_NUMBER}",
+                            artifactFolder = "${ARTIFACT_FOLDER}",
+                            fullFileName   = "${safeBuildName}.tar.gz",
+                            applicationZip = "${artifactFolder}/${fullFileName}"
+                            applicationDir = ["./openshift_django",
+                                              "./pictures",
+                                              "./requirements.pip",
+                                              "./manage.py",
+                                              "./Dockerfile",
+                                              ].join(" ");
+                        def needTargetPath = !fileExists("${artifactFolder}")
+                        if (needTargetPath) {
+                            sh "mkdir ${artifactFolder}"
+                        }
+                        sh "tar -czvf ${applicationZip} ${applicationDir}"
+                        archiveArtifacts artifacts: "${applicationZip}", excludes: null, onlyIfSuccessful: true
+                      }
+                  }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
+              }
+              stage('Create Image Builder') {
+                  when {
+                      expression {
                           openshift.withCluster() {
-                              openshift.withProject() {
-                                  openshiftBuild(buildConfig: "${APPLICATION_NAME}", showBuildLogs: 'true')
+                          openshift.withProject(DEV_PROJECT) {
+                              echo "checking openshift django exists in DEV"
+                              return !openshift.selector("bc", "${TEMPLATE_NAME}").exists();
+                             }
+                        }
+                    }
+                }
+                steps {
+                    script {
+                        echo "Creating Image Builder"
+                        openshift.withCluster() {
+                            openshift.withProject(DEV_PROJECT) {
+                                openshift.create(BUILD_TEMPLATE);
                               }
                           }
                       }
                   }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
-              stage('Deploy Application') {
+              stage('Build Image') {
                   steps {
+                      echo "Building Image"
+                      sh "rm -rf oc-build && mkdir -p oc-build/deployments"
+                      sh "cp ${ARTIFACT_FOLDER}/${APPLICATION_NAME}_${BUILD_NUMBER}.tar.gz oc-build/deployments/ROOT.tar.gz"
+                  
                       script {
                           openshift.withCluster() {
-                              openshift.withProject() {
-                                  openshiftDeploy(deploymentConfig: "${APPLICATION_NAME}")
+                          openshift.withProject(env.DEV_PROJECT) {
+                              openshift.selector("bc", "$TEMPLATE_NAME").startBuild("--from-archive=oc-build/deployments/ROOT.tar.gz", "--wait=true")
                               }
                           }
                       }
                   }
+                 post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
-          }
+              stage('Rollout to DEV') {
+                  when {
+                      expression {
+                        openshift.withCluster() {
+                          openshift.withProject(env.DEV_PROJECT) {
+                            return !openshift.selector('dc', "${TEMPLATE_NAME}").exists()
+                            }
+                        }
+                    }
+                }
+                steps {
+                    echo "Deploying to ${DEV_PROJECT}"
+                    script {
+                        openshift.withCluster() {
+                            openshift.withProject(env.DEV_PROJECT) {
+                                def app = openshift.newApp("${TEMPLATE_NAME}:latest")
+                                app.narrow("svc").expose();
+                                def dc = openshift.selector("dc", "tasks")
+                                while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
+                                    sleep 10
+                                  }
+                              }
+                          }
+                      }
+                  }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
+              }
+              stage('Promote to STAGE?') {
+                  steps {
+                      timeout(time:15, unit:'MINUTES') {
+                           input message: "Promote to STAGE?", ok: "Promote"
+                      }
+                      script {
+                          openshift.withCluster() {
+                          openshift.tag("${DEV_PROJECT}/${TEMPLATE_NAME}:latest", "${STAGE_PROJECT}/${TEMPLATE_NAME}:${stageTag}")
+                            }
+                        }
+                   }
+                    post {
+                        failure {
+                            script { env.FAILURE_STAGE = STAGE_NAME }
+                        }
+                    }
+              }
+              stage('Rollout to STAGE') {
+                  steps {
+                      echo "Rollout to ${STAGE_PROJECT}"
+                      script {
+                            openshift.withCluster() {
+                              openshift.withProject(STAGE_PROJECT) {
+                                  if (openshift.selector('dc', '${TEMPLATE_NAME}').exists()) {
+                                      openshift.selector('dc', '${TEMPLATE_NAME}').delete()
+                                      openshift.selector('svc', '${TEMPLATE_NAME}').delete()
+                                       openshift.selector('route', '${TEMPLATE_NAME}').delete()
+                                }
+                            openshift.newApp("${TEMPLATE_NAME}:${stageTag}").narrow("svc").expose()
+                            }
+                         }
+                      } 
+                  }
+                  post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
+              }
+              stage('Scale in STAGE') {
+                  steps {
+                      echo "Scale in ${STAGE_PROJECT}"
+                      script {
+                          openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "${TEMPLATE_NAME}", replicaCount: '3')
+                        }
+                    }
+                  post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                        }
+                    }
+                }
+            }
+            post {
+                success {
+                    steps{
+                        script{
+                            def gitCommit = sh (script: "git log -1", returnStatus: true)
+                            def msg = "deployment success for: \n ${gitCommit}"
+                            slackSend(color="green", message=msg)
+                        }
+                    }
+                }
+                failure {
+                    steps{
+                        script{
+                            def msg =  "${env.APPLICATION_NAME} (${env.BUILD_NUMBER}) has failed in stage: ${env.FAILURE_STAGE}"
+                            slackSend(color="red", message=msg)
+                        }
+                    }
+                }
+                always {
+                    slackSend(message="jenkins Pipeline completed for ${env.APPLICATION_NAME} (${env.BUILD_NUMBER})")
+                }
+            }
         }

@@ -25,13 +25,3 @@ objects:
           name: 'python:3.6'
           namespace: openshift
         type: Docker
-
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    name: openshift-django
-  spec:
-    lookupPolicy:
-      local: false
-    tags:
-      - name: latest

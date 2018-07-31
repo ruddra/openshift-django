@@ -27,22 +27,31 @@ spec:
               DEV_PROJECT = "dev"
               STAGE_PROJECT = "stage"
               TEMPLATE_NAME = "openshift-django"
+              ARTIFACT_FOLDER = "target"
           }
           stages {
               stage('Get Latest Code') {
                   steps {
                     git branch: "${GIT_BRANCH}", url: "${GIT_REPO}"
                   }
+                post {
+                    failure {
+                       script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
               stage ("Install Dependencies") {
                 steps {
-                  echo 'Installing Dependencies..'
                   sh 'conda env create -n ${APPLICATION_NAME}_env -f environment.yml'
                 }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
               stage('Test Application') {
                   steps {
-                    echo 'Running Tests'
                     sh '''
                     source activate ${APPLICATION_NAME}_env
                     python manage.py test
@@ -50,13 +59,17 @@ spec:
                     '''
                     junit "xunittest.xml"
                   }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
               stage('Store Artifact'){
                   steps{
                       script{
-                        echo "Stroing Artifact"
                         def safeBuildName  = "${APPLICATION_NAME}_${BUILD_NUMBER}",
-                            artifactFolder = "target",
+                            artifactFolder = "${ARTIFACT_FOLDER}",
                             fullFileName   = "${safeBuildName}.tar.gz",
                             applicationZip = "${artifactFolder}/${fullFileName}"
                             applicationDir = ["./openshift_django",
@@ -73,6 +86,11 @@ spec:
                         archiveArtifacts artifacts: "${applicationZip}", excludes: null, onlyIfSuccessful: true
                       }
                   }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
               stage('Create Image Builder') {
                   when {
@@ -80,34 +98,42 @@ spec:
                           openshift.withCluster() {
                           openshift.withProject(DEV_PROJECT) {
                               echo "checking openshift django exists in DEV"
-                              return !openshift.selector("bc", "openshift-django").exists();
+                              return !openshift.selector("bc", "${TEMPLATE_NAME}").exists();
                              }
                         }
                     }
                 }
                 steps {
                     script {
-                        echo "Creating Image Builder"
                         openshift.withCluster() {
                             openshift.withProject(DEV_PROJECT) {
-                                openshift.newApp(${BUILD_TEMPLATE});
+                                openshift.newApp(BUILD_TEMPLATE);
                               }
                           }
+                      }
+                  }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
                       }
                   }
               }
               stage('Build Image') {
                   steps {
-                      echo "Building Image"
                       sh "rm -rf oc-build && mkdir -p oc-build/deployments"
-                      sh "cp ${applicationZip} oc-build/deployments/ROOT.tar.gz"
+                      sh "cp ${ARTIFACT_FOLDER}/${APPLICATION_NAME}_${BUILD_NUMBER}.tar.gz oc-build/deployments/ROOT.tar.gz"
                   
                       script {
                           openshift.withCluster() {
                           openshift.withProject(env.DEV_PROJECT) {
-                              openshift.selector("bc", "$TEMPLATE_NAME").startBuild("--from-archive=oc-build/ROOT.tar.gz", "--wait=true")
+                              openshift.selector("bc", "$TEMPLATE_NAME").startBuild("--from-archive=oc-build/deployments/ROOT.tar.gz", "--wait=true")
                               }
                           }
+                      }
+                  }
+                 post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
                       }
                   }
               }
@@ -122,7 +148,6 @@ spec:
                     }
                 }
                 steps {
-                    echo "Deploying to ${DEV_PROJECT}"
                     script {
                         openshift.withCluster() {
                             openshift.withProject(env.DEV_PROJECT) {
@@ -134,6 +159,11 @@ spec:
                                   }
                               }
                           }
+                      }
+                  }
+                post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
                       }
                   }
               }
@@ -148,10 +178,14 @@ spec:
                             }
                         }
                    }
+                    post {
+                        failure {
+                            script { env.FAILURE_STAGE = STAGE_NAME }
+                        }
+                    }
               }
               stage('Rollout to STAGE') {
                   steps {
-                      echo "Rollout to ${STAGE_PROJECT}"
                       script {
                             openshift.withCluster() {
                               openshift.withProject(STAGE_PROJECT) {
@@ -165,12 +199,21 @@ spec:
                          }
                       } 
                   }
+                  post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
+                      }
+                  }
               }
               stage('Scale in STAGE') {
                   steps {
-                      echo "Scale in ${STAGE_PROJECT}"
                       script {
                           openshiftScale(namespace: "${STAGE_PROJECT}", deploymentConfig: "${TEMPLATE_NAME}", replicaCount: '3')
+                        }
+                    }
+                  post {
+                    failure {
+                        script { env.FAILURE_STAGE = STAGE_NAME }
                         }
                     }
                 }
