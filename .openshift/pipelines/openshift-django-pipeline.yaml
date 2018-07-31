@@ -20,6 +20,7 @@ spec:
           environment {
               APPLICATION_NAME = 'openshift-django'
               TEMPLATE = "https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-template.yaml"
+              BUILD_TEMPLATE = "https://raw.githubusercontent.com/ruddra/openshift-django/develop/.openshift/templates/openshift-django-build.yaml"
               GIT_REPO="http://github.com/ruddra/openshift-django.git"
               GIT_BRANCH="develop"
               STAGE_TAG = "promoteToQA"
@@ -51,16 +52,85 @@ spec:
                     junit "xunittest.xml"
                   }
               }
-              stage('Build Application') {
-                  steps {
-                      script {
+              stage('Store Artifacts'){
+                  steps{
+                      script{
+                          def regExMatch     = /\/|\./,
+                            safeBuildName  = jenkins.branch.MultiBranchProject.rawDecode(env.APPLICATION_NAME).replaceAll(regExMatch, "-"),
+                            artifactFolder = "target",
+                            fullFileName   = "${safeBuildName}.tar.gz",
+                            applicationZip = "${artifactFolder}/${fullFileName}";
+                            def needTargetPath = !fileExists("${artifactFolder}")
+                            if (needTargetPath) {
+                                sh "mkdir ${artifactFolder}"
+                            }
+                            sh "tar -czvf ${applicationZip} ."
+                            archiveArtifacts artifacts: "${applicationZip}", excludes: null, onlyIfSuccessful: true
+                      }
+                  }
+              }
+              stage('Create Image Builder') {
+                  when {
+                      expression {
                           openshift.withCluster() {
-                              openshift.withProject() {
-                                  openshiftBuild(buildConfig: "${APPLICATION_NAME}", showBuildLogs: 'true')
+                          openshift.withProject(DEV_PROJECT) {
+                              echo "checking openshift django exists in DEV"
+                              return !openshift.selector("bc", "openshift-django").exists();
+                             }
+                        }
+                    }
+                }
+                steps {
+                    script {
+                        openshift.withCluster() {
+                            openshift.withProject(DEV_PROJECT) {
+                                openshift.newBuild('$', "--name=${TEMPLATE_NAME}");
+                            
                               }
                           }
                       }
                   }
+              }
+              stage('Build Image') {
+                steps {
+                  sh "rm -rf oc-build && mkdir -p oc-build/deployments"
+
+                  sh "cp target/ oc-build/deployments/ROOT.tar.gz"
+                  
+                  script {
+                    openshift.withCluster() {
+                      openshift.withProject(env.DEV_PROJECT) {
+                        openshift.selector("bc", "$TEMPLATE_NAME").startBuild("--from-archive=oc-build", "--wait=true")
+                      }
+                    }
+                  }
+                }
+              }
+              stage('Create DEV') {
+                when {
+                  expression {
+                    openshift.withCluster() {
+                      openshift.withProject(env.DEV_PROJECT) {
+                        return !openshift.selector('dc', "${APPLICATION_NAME}").exists()
+                      }
+                    }
+                  }
+                }
+                steps {
+                  script {
+                    openshift.withCluster() {
+                      openshift.withProject(env.DEV_PROJECT) {
+                        def app = openshift.newApp("${TEMPLATE_NAME}:latest")
+                        app.narrow("svc").expose();
+
+                        def dc = openshift.selector("dc", "tasks")
+                        while (dc.object().spec.replicas != dc.object().status.availableReplicas) {
+                            sleep 10
+                        }
+                      }
+                    }
+                  }
+                }
               }
               stage('Deploy Application') {
                   steps {
