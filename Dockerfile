@@ -7,7 +7,7 @@ RUN pip install -r /config/requirements.pip
 ADD . /src
 WORKDIR /src
 
-RUN pip install -r requirements.pip
+RUN source bin/activate
 RUN python manage.py migrate
 
 CMD gunicorn openshift_django.wsgi -b 0.0.0.0:3013

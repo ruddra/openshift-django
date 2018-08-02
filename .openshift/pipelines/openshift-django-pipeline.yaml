@@ -36,15 +36,21 @@ spec:
               }
               stage ("Install Dependencies") {
                 steps {
-                  sh 'conda env create -n ${APPLICATION_NAME}_env -f environment.yml'
+                  sh """
+                  pip install virtualenv
+                  virtualenv --no-site-packages .
+                  source bin/activate
+                  pip install -r requirements.pip
+                  deactivate
+                  """
                 }
               }
               stage('Run Tests') {
                   steps {
                     sh '''
-                    source activate ${APPLICATION_NAME}_env
+                    source bin/activate
                     python manage.py test
-                    source deactivate
+                    deactivate
                     '''
                     junit "xunittest.xml"
                   }
@@ -61,6 +67,9 @@ spec:
                                               "./requirements.pip",
                                               "./manage.py",
                                               "./Dockerfile",
+                                              "./build",
+                                              "./lib",
+                                              "./include",
                                               ].join(" ");
                         def needTargetPath = !fileExists("${artifactFolder}")
                         if (needTargetPath) {

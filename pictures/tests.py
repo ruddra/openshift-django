@@ -11,4 +11,3 @@ class DummyTest(TestCase):
 
     def test_dummy_three(self):
         self.assertEqual(True, True)
-        
