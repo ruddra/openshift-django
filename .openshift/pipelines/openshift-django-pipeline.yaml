@@ -66,10 +66,7 @@ spec:
                                               "./pictures",
                                               "./requirements.pip",
                                               "./manage.py",
-                                              "./Dockerfile",
-                                              "./build",
-                                              "./lib",
-                                              "./include",
+                                              "./Dockerfile"
                                               ].join(" ");
                         def needTargetPath = !fileExists("${artifactFolder}")
                         if (needTargetPath) {
