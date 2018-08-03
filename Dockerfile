@@ -1,12 +1,8 @@
 FROM python:3.6
 ENV PYTHONUNBUFFERED 1
 
-ADD requirements.pip /config/
-RUN pip install -r /config/requirements.pip
-
 ADD . /src
 WORKDIR /src
-
 RUN pip install -r requirements.pip
 RUN python manage.py migrate
 
